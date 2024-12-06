@@ -27,14 +27,56 @@ app.post('/addSchool', async (req, res) => {
 });
 
 // List Schools API
+const calculateDistance = require('./utils/distance');
+
+// Add this endpoint
 app.get('/listSchools', async (req, res) => {
   try {
+    const { latitude, longitude } = req.query;
+
+    // Validate input parameters
+    if (!latitude || !longitude) {
+      return res.status(400).json({
+        error: 'Missing required parameters: latitude and longitude'
+      });
+    }
+
+    // Convert to numbers and validate
+    const userLat = parseFloat(latitude);
+    const userLon = parseFloat(longitude);
+    
+    if (isNaN(userLat) || isNaN(userLon)) {
+      return res.status(400).json({
+        error: 'Invalid coordinates format'
+      });
+    }
+
+    // Get schools and calculate distances
     const schools = await School.findAll();
-    res.json(schools);
+    const schoolsWithDistance = schools.map(school => ({
+      id: school.id,
+      name: school.name,
+      address: school.address,
+      latitude: school.latitude,
+      longitude: school.longitude,
+      distance: calculateDistance(
+        userLat,
+        userLon,
+        school.latitude,
+        school.longitude
+      )
+    }));
+
+    // Sort by distance
+    schoolsWithDistance.sort((a, b) => a.distance - b.distance);
+
+    res.json(schoolsWithDistance);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('List schools error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
