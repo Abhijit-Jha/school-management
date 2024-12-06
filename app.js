@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const School = require('./models/School');
-const calculateDistance = require('./utils/distance');
 
 const app = express();
 app.use(cors());
@@ -12,7 +11,6 @@ app.post('/addSchool', async (req, res) => {
   try {
     const { name, address, latitude, longitude } = req.body;
 
-    // Validation -- i can implement zod also here
     if (!name || !address || !latitude || !longitude) {
       return res.status(400).json({ error: 'All fields are required' });
     }
@@ -31,23 +29,8 @@ app.post('/addSchool', async (req, res) => {
 // List Schools API
 app.get('/listSchools', async (req, res) => {
   try {
-    
     const schools = await School.findAll();
-    
-    // Calculate distances and sort
-    const schoolsWithDistance = schools.map(school => ({
-      ...school,
-      distance: calculateDistance(
-        parseFloat(latitude),
-        parseFloat(longitude),
-        school.latitude,
-        school.longitude
-      )
-    }));
-
-    schoolsWithDistance.sort((a, b) => a.distance - b.distance);
-    
-    res.json(schoolsWithDistance);
+    res.json(schools);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
